@@ -56,4 +56,4 @@ The model retains strong performance even after pruning more than 70% of weights
 
 ```bash
 pip install -r requirements.txt
-python solution.py
+python self-prune-NN.py
