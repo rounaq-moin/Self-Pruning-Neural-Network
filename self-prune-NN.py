@@ -267,46 +267,55 @@ def run_experiment(lam, train_loader, test_loader, device):
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
 
     for epoch in range(20):
-        train_epoch(model, train_loader, optimizer, device, lam)
+        train_epoch(model, train_loader, opt, device, lam)
 
         acc = evaluate(model, test_loader, device)
         sp  = model.overall_sparsity()
-        mean_gate = model.all_gates().mean()
+
+        mean_gate = float(model.all_gates().mean())  # NEW METRIC
 
         print(f"Epoch {epoch:02d} | Acc={acc*100:.2f}% | Sparsity={sp*100:.2f}% | MeanGate={mean_gate:.3f}")
 
         scheduler.step()
 
     return {
-        "lambda": lam,
-        "accuracy": float(acc * 100),
-        "sparsity": float(sp * 100),
-        "mean_gate": float(mean_gate)
-    }
+    "lambda": float(lam),
+    "accuracy": float(acc * 100),
+    "sparsity": float(sp * 100),
+    "mean_gate": float(mean_gate)
+}
 
 
-# ==========================================
-# 6. MAIN FUNCTION
-# ==========================================
+# ===============================
+# Main
+# ===============================
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     train_loader, test_loader = get_loaders()
 
-    # Different sparsity strengths
     lambdas = [1.0, 5.0, 20.0]
-    results = []
 
+    results = []
     for lam in lambdas:
         print(f"\n==== Lambda {lam} ====")
-        res = run_experiment(lam, train_loader, test_loader, device)
+        res = run(lam, train_loader, test_loader, device)
         results.append(res)
 
     # Save results
-    with open("results.json", "w") as f:
-        json.dump(results, f, indent=2)
+    out = []
+    for r in results:
+        out.append({
+            "lambda": r["lambda"],
+            "accuracy": round(r["acc"]*100,2),
+            "sparsity": round(r["sparsity"]*100,2),
+            "mean_gate": round(r["mean_gate"],4)
+        })
 
-    print("\nResults saved to results.json")
+    with open("results.json","w") as f:
+        json.dump(out,f,indent=2)
+
+    print("\nSaved results.json")
 
 
 if __name__ == "__main__":
